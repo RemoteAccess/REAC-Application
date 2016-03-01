@@ -3,7 +3,7 @@
 #include <boost/bind.hpp>
 #include <unistd.h>
 #include <iostream>
-
+#include <thread>
 
 using boost::asio::ip::tcp;
 
@@ -12,6 +12,8 @@ class reac_communication
 private:
 	tcp::socket socket;
 	boost::asio::streambuf response_;
+	std::thread listening;
+	bool isCommunicating;
 
 public:
 	reac_communication(boost::asio::io_service& io_service) : socket(io_service)
@@ -24,14 +26,10 @@ public:
 		std::cout<<"New user Connected from "<<socket.remote_endpoint().address().to_string()<<std::endl;
 		sendWelcomeMessage();
 
-		
-		int pid = fork();
-		if(pid==0)	//Child
-			async_read();	//For Read 
-		else
-			write_to_socket(); //For Write
-
-    		
+		//Multithreading for Writing to Socket
+		isCommunicating = true;
+		async_read(); 
+		listening = std::thread([=]{write_to_socket();});
 	}
 	
 	void write_to_socket()
@@ -44,13 +42,16 @@ public:
 		int len=strlen(line);
 		line[len]='\n';
 		line[len+1]='\0';
-
- 	  	 	boost::asio::async_write(socket, boost::asio::buffer(line, len+1),
-	
-		boost::bind(&reac_communication::write_handler, this,
-    	    	boost::asio::placeholders::error,
-    	   	boost::asio::placeholders::bytes_transferred));
 		
+		//Socket Closed!
+		if (!isCommunicating)
+			return;
+
+ 	  	boost::asio::async_write(socket, boost::asio::buffer(line, len+1),
+			boost::bind(&reac_communication::write_handler, this,
+			    	boost::asio::placeholders::error,
+			   	boost::asio::placeholders::bytes_transferred));
+			
 		}
 	}
 
@@ -68,10 +69,7 @@ public:
 		if(error == boost::asio::error::eof)
 		{
 			socket.close();
-
-			int parent = getppid();
-            kill(parent, SIGKILL);
-           
+			isCommunicating = false;
 			return;
   		}
   		else if(!error)
@@ -79,7 +77,9 @@ public:
 				std::cout<<"[Message Recived!] "<<&response_<<std::endl;
 			}
 		else
-			std::cerr<<"[Message Received Failed!]"<<std::endl;
+			{
+				std::cerr<<"[Message Received Failed!]"<<std::endl;
+			}
 		async_read();//Again Read
 
 		
@@ -103,7 +103,6 @@ public:
 	
 	void async_read()
 	{
-		
 		boost::asio::async_read( socket,
           response_,
           boost::asio::transfer_at_least(1),
