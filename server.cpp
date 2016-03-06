@@ -1,8 +1,9 @@
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
+#include <unistd.h>
 #include <iostream>
-
+#include <thread>
 
 using boost::asio::ip::tcp;
 
@@ -10,21 +11,48 @@ class reac_communication
 {
 private:
 	tcp::socket socket;
+	boost::asio::streambuf response_;
+	std::thread listening;
+	bool isCommunicating;
+
 public:
 	reac_communication(boost::asio::io_service& io_service) : socket(io_service)
 	{
 
 	}
 
-
 	void start()
 	{
 		std::cout<<"New user Connected from "<<socket.remote_endpoint().address().to_string()<<std::endl;
 		sendWelcomeMessage();
 
-        boost::bind(&reac_communication::write_handler, this,
-          boost::asio::placeholders::error,
-          boost::asio::placeholders::bytes_transferred);
+		//Multithreading for Writing to Socket
+		isCommunicating = true;
+		async_read(); 
+		listening = std::thread([=]{write_to_socket();});
+	}
+	
+	void write_to_socket()
+	{
+		char line[256 + 1];
+		
+		while (std::cin.getline(line, 256 + 1))
+		{
+ 	  	using namespace std; // For strlen and memcpy.
+		int len=strlen(line);
+		line[len]='\n';
+		line[len+1]='\0';
+		
+		//Socket Closed!
+		if (!isCommunicating)
+			return;
+
+ 	  	boost::asio::async_write(socket, boost::asio::buffer(line, len+1),
+			boost::bind(&reac_communication::write_handler, this,
+			    	boost::asio::placeholders::error,
+			   	boost::asio::placeholders::bytes_transferred));
+			
+		}
 	}
 
 	void write_handler(const boost::system::error_code& error, size_t bytes_transferred)
@@ -34,32 +62,53 @@ public:
 		else
 			std::cerr<<"[Message Send Failed!]"<<std::endl;
 	}
+	
+	void read_handler(const boost::system::error_code& error)
+	{
+		 
+		if(error == boost::asio::error::eof)
+		{
+			socket.close();
+			isCommunicating = false;
+			return;
+  		}
+  		else if(!error)
+			{
+				std::cout<<"[Message Recived!] "<<&response_<<std::endl;
+			}
+		else
+			{
+				std::cerr<<"[Message Received Failed!]"<<std::endl;
+			}
+		async_read();//Again Read
+
+		
+		
+	}
 
 	tcp::socket& get_socket()
 	{
 		return socket;
 	}
-
+  
 	void sendWelcomeMessage()
 	{
 		boost::asio::async_write(socket, boost::asio::buffer("You are connected to REAC-Server!\n"),
+		
 			boost::bind(&reac_communication::write_handler, this,
           boost::asio::placeholders::error,
           boost::asio::placeholders::bytes_transferred));
 		
 	}
-
-	//Need to Connect
-	void async_read(boost::system::error_code& error, size_t bytes_transferred)
+	
+	void async_read()
 	{
-		if(error == boost::asio::error::eof)
-		{
-			//Connection Closed!
-		}
-		else
-		{
-			//Normal Data
-		}
+		boost::asio::async_read( socket,
+          response_,
+          boost::asio::transfer_at_least(1),
+          boost::bind(&reac_communication::read_handler, this,
+            boost::asio::placeholders::error) );
+		
 	}
 };
 class reac_server
