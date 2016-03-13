@@ -1,0 +1,5 @@
+echo -n "Enter IP : "
+read IP
+echo -n "Enter Port Number : "
+read PORT
+nc $IP `expr $PORT`

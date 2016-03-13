@@ -1,37 +1,18 @@
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
-#include <unistd.h>
+
 #include <iostream>
-#include <thread>
 #include <stdio.h>
+#include "executor.h"
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 using boost::asio::ip::tcp;
 #define REAC_PROMPT "manager@REAC> "
 
 int pno;
-class executor
-{
-private:
-	void *_ref;
-	FILE *pipe;
-public:
-	executor()
-	{
-
-	}
-	executor(void *ref,FILE *pipe)
-	{
-		this->_ref = ref;
-		this->pipe = pipe;
-	}
-	~executor()
-	{
-
-	}
-	
-	void execute(std::string str);
-};
 
 class reac_communication
 {
@@ -39,7 +20,6 @@ private:
 	executor *_executor;
 	tcp::socket socket;
 	boost::asio::streambuf response_;
-	std::thread listening;
 	bool isCommunicating;
 	FILE* pipe;
 
@@ -209,8 +189,47 @@ private:
 	}
 };
 
+void killProgram(reac_communication *reac, std::string process) {
+	char cmd[500];
+	strcpy(cmd,("kill `pgrep "+process+"`").c_str());
+	int sys = system(cmd);
+	reac->write_to_socket("Status : "+std::to_string(sys));
+		
+}
+void killProgramPID(reac_communication *reac, std::string pid) {
+	char cmd[500];
+	strcpy(cmd,("kill "+pid).c_str());
+	int sys = system(cmd);
+	reac->write_to_socket("Status : "+std::to_string(sys));
+		
+}	
 
 
+
+void executeShell(reac_communication *reac,std::string relPath, std::string argv1) {
+	int pid = fork();
+	if (pid==0) {
+		char cwd[150];
+		getcwd(cwd,150);
+		char exePath[200];
+		strcpy(exePath,(std::string(cwd)+"/"+relPath).c_str());
+		//Child
+		char *argv[4]={"/bin/sh", exePath, NULL, NULL};
+		char argv1_[100];
+		strcpy(argv1_, argv1.c_str());
+		argv[2] = argv1_;
+
+		char *newenv[]={NULL};
+		execve("/bin/sh",argv,newenv);
+		perror("Error in Execution!");
+		reac->write_to_socket("Error in Execution!\n");
+		exit(0);
+
+	} else {
+		reac->write_to_socket("PID : "+std::to_string(pid)+"\n");
+				
+	}
+}
 
 
 void executor::execute(std::string str)
@@ -218,11 +237,18 @@ void executor::execute(std::string str)
 	reac_communication *reac = (reac_communication *)_ref;
 	if (str == "START_SHELL") {
 		reac->write_to_socket("Shell : Starting\n");
-		reac->write_to_socket("Shell : Started\n");
+		executeShell(reac,"executor/server_script",NULL);
 	} else if (str == "EXIT") {
 		reac->close();
-	} else {
+	} else if (str.substr(0,5) == "KILL_") {
+		killProgram(reac, str.substr(5));
+	} else if (str.substr(0,8) == "PIDKILL_") {
+		killProgramPID(reac, str.substr(8));
+	} else if (str.substr(0,6) == "BLOCK_") {
+		executeShell(reac,"Log/killer",str.substr(6));
+	} else
 		reac->write_to_socket("Invalid REAC Command!\n");
-	}
+	
 
 }
+
