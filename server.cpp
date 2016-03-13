@@ -4,22 +4,26 @@
 #include <unistd.h>
 #include <iostream>
 #include <thread>
-//#include "executor.cpp"
+#include <stdio.h>
 
 using boost::asio::ip::tcp;
+#define REAC_PROMPT "manager@REAC> "
 
+int pno;
 class executor
 {
 private:
 	void *_ref;
+	FILE *pipe;
 public:
 	executor()
 	{
 
 	}
-	executor(void *ref)
+	executor(void *ref,FILE *pipe)
 	{
 		this->_ref = ref;
+		this->pipe = pipe;
 	}
 	~executor()
 	{
@@ -37,25 +41,38 @@ private:
 	boost::asio::streambuf response_;
 	std::thread listening;
 	bool isCommunicating;
+	FILE* pipe;
 
 public:
 	reac_communication(boost::asio::io_service& io_service) : socket(io_service)
 	{
-		_executor = new executor(this);
+		
+		_executor = new executor(this,pipe);
 	}
 
 	~reac_communication()
 	{
+		//pclose(pipe);
 		delete _executor;
 	}
+
+	
 	void start()
 	{
 		std::cout<<"New user Connected from "<<socket.remote_endpoint().address().to_string()<<std::endl;
 		sendWelcomeMessage();
+		write_to_socket(REAC_PROMPT);
 
 		//Multithreading for Writing to Socket
 		isCommunicating = true;
+		char buff[512];
+		
+
 		async_read(); 
+		//std::string cmd = "nc -l "+std::to_string(pno+1)+" | ./lshell  | tee -a log.txt | nc localhost "+std::to_string(pno+2);
+		//system(cmd.c_str());
+		//socket.close();
+		//exit(0);
 		//listening = NULL;//std::thread([=]{write_to_socket();});
 		
 	}
@@ -91,7 +108,10 @@ public:
 		else
 			std::cerr<<"[Message Send Failed!]"<<std::endl;
 	}
-	
+	void close() {
+			socket.close();
+			isCommunicating = false;
+	}
 	void read_handler(const boost::system::error_code& error)
 	{
 		 
@@ -115,7 +135,7 @@ public:
 			}
 		else
 			{
-				std::cerr<<"[Message Received Failed!]"<<std::endl;
+				std::cerr<<"Message Received Failed!"<<std::endl;
 			}
 		async_read();//Again Read
 
@@ -140,7 +160,9 @@ public:
 	
 	void async_read()
 	{
-		
+		if (!isCommunicating)
+			return;
+
 		boost::asio::async_read( socket,
           response_,
           boost::asio::transfer_at_least(1),
@@ -149,6 +171,7 @@ public:
 		
 	}
 };
+
 class reac_server
 {
 private:
@@ -160,7 +183,9 @@ public:
 	reac_server(boost::asio::io_service &io_service, int port_number) : _acceptor(io_service, tcp::endpoint(tcp::v4(), port_number))
 	{
 		this->io_service = &io_service;
+		pno = port_number;
 		std::cout<<"Server Started on Port "<<port_number<<std::endl;
+		
 		accept_clients();
 	}
 
@@ -190,11 +215,14 @@ private:
 
 void executor::execute(std::string str)
 {
-	std::string output;
-	if(str=="ls")
-		output = "/bin /boot /home /etc /proc /var /usr\n";	
-	else if(str=="cd")
-		output = "CHANGE DIRECTORY\n";
-	else output = "Invalid Command : "+str+"\n";	
-	((reac_communication*)_ref)->write_to_socket(output);
+	reac_communication *reac = (reac_communication *)_ref;
+	if (str == "START_SHELL") {
+		reac->write_to_socket("Shell : Starting\n");
+		reac->write_to_socket("Shell : Started\n");
+	} else if (str == "EXIT") {
+		reac->close();
+	} else {
+		reac->write_to_socket("Invalid REAC Command!\n");
+	}
+
 }

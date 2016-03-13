@@ -1,0 +1,6 @@
+while true;
+do
+kill `ps ax | grep firefox | cut --delimiter=' ' -f 2`;
+sleep 1
+done;
+

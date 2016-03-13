@@ -1,0 +1,3 @@
+cat lshell.conf1 > lshell.conf
+cat cmds >> lshell.conf
+cat lshell.conf2 >> lshell.conf

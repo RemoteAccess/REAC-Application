@@ -1,0 +1,74 @@
+
+##  a list of forbidden character or commands -- deny vim, as it allows to escape lshell
+forbidden	: []
+#forbidden       : [';', '&', '|','`','>','<', '$(', '${']
+
+##  a list of allowed command to use with sudo(8)
+#sudo_commands   : ['ls', 'more']
+
+##  number of warnings when user enters a forbidden value before getting 
+##  exited from lshell, set to -1 to disable.
+warning_counter : 2
+
+##  command aliases list (similar to bash’s alias directive)
+aliases         : {'ll':'ls -l', 'vim':'rvim'}
+
+##  introduction text to print (when entering lshell)
+intro           : "Welcome to Remote Restricted Access (REAC)"
+
+##  configure your promt using %u or %h (default: username)
+#prompt          : "%u@%h"
+
+##  set sort prompt current directory update (default: 0)
+#prompt_short    : 0
+
+##  a value in seconds for the session timer
+#timer           : 5
+
+##  list of path to restrict the user "geographicaly"
+path            : ['/home/scopeinfinity','/etc','/usr','/mnt','/var','/opt']
+
+##  set the home folder of your user. If not specified the home_path is set to 
+##  the $HOME environment variable
+#home_path       : '/home/bla/'
+
+##  update the environment variable $PATH of the user
+#env_path        : ':/usr/local/bin:/usr/sbin'
+
+##  a list of path; all executable files inside these path will be allowed 
+#allowed_cmd_path: ['/home/bla/bin','/home/bla/stuff/libexec']
+
+##  add environment variables
+#env_vars        : {'foo':1, 'bar':'helloworld'}
+
+##  allow or forbid the use of scp (set to 1 or 0)
+#scp             : 1
+
+## forbid scp upload
+#scp_upload       : 0
+
+## forbid scp download
+#scp_download     : 0
+
+##  allow of forbid the use of sftp (set to 1 or 0)
+#sftp            : 1
+
+##  list of command allowed to execute over ssh (e.g. rsync, rdiff-backup, etc.)
+#overssh         : ['ls', 'rsync']
+
+##  logging strictness. If set to 1, any unknown command is considered as 
+##  forbidden, and user's warning counter is decreased. If set to 0, command is
+##  considered as unknown, and user is only warned (i.e. *** unknown synthax)
+strict          : 0
+
+##  force files sent through scp to a specific directory
+#scpforce        : '/home/bla/uploads/'
+
+##  history file maximum size 
+#history_size     : 100
+
+##  set history file name (default is /home/%u/.lhistory)
+#history_file     : "/home/%u/.lshell_history"
+
+##  define the script to run at user login
+#login_script     : "/path/to/myscript.sh"
