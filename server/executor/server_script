@@ -1,0 +1,4 @@
+echo Waiting for User
+cd executor
+./configure
+nc -l 8081 | ./lshell --config ./lshell.conf 2>&1 | nc localhost 8082

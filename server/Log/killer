@@ -1,0 +1,6 @@
+while true;
+do
+kill `pgrep $1` 2> /dev/null;
+sleep 1
+done;
+
