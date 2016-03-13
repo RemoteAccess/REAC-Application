@@ -1,2 +1,0 @@
-g++ Main.cpp -o server -std=c++11 -lpthread -lboost_system
-
