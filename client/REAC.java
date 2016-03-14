@@ -5,6 +5,7 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
+import javax.swing.border.Border;
 
 class REAC extends JFrame{
     private SocketMain mainSocket, executorTransmitter;
@@ -13,7 +14,9 @@ class REAC extends JFrame{
     private JTextField ip,command;
     private JButton connect,execute;
     private JTextArea output;
-    
+    private JLabel ipstr,outstr,cmdstr;
+    private JScrollPane scroll;
+    private JMenuBar menuBar;
         public REAC(final String name)          //throws IOException
         {
         super(name);
@@ -25,18 +28,37 @@ class REAC extends JFrame{
         setLayout(new FlowLayout());
         top.setLayout(new BoxLayout(top, BoxLayout.X_AXIS));
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.X_AXIS));
-        mid.setLayout(new BoxLayout(mid, BoxLayout.X_AXIS));
+        //mid.setLayout(new BoxLayout(mid, BoxLayout.X_AXIS));
+        mid.setLayout(new FlowLayout());
+        //menubar styling
+        menuBar = new JMenuBar();
+        menuBar.add(Box.createRigidArea(new Dimension(20,10)));
+
+        //JLABELS
+        ipstr=new JLabel("Enter the IP Address: ");
+        outstr=new JLabel("Terminal");
         
-        connect = new JButton("CONNECT");
-        execute = new JButton("EXECUTE");
-        ip = new JTextField(50);
-        command = new JTextField(50);
-       
+        cmdstr=new JLabel("Enter the Command :  ");
+        connect = new RoundButton("CONNECT");
+        execute = new RoundButton("EXECUTE");
+        // textfields
+        ip = new RoundJTextField(50);
+        command = new RoundJTextField(50);
+        Border border = BorderFactory.createLineBorder(Color.BLACK);
+        ip.setBorder(border);
+        command.setBorder(border);
+        // adding scroll to JTEXTAREA
         output=new JTextArea(20,41);
+        scroll = new JScrollPane(output);
+        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        add(scroll);
+
         output.setFont(new Font("Verdana",Font.PLAIN,14));
         output.setBackground(Color.BLACK);
-        output.setForeground(Color.WHITE);
+        output.setForeground(Color.GREEN);
+        output.setEditable(false);
         output.setLineWrap(true);
+        output.setWrapStyleWord (false);
 
         connect.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent event)
@@ -53,15 +75,26 @@ class REAC extends JFrame{
             }
         });       
 
+        menuBar.add(outstr);
+        top.add(ipstr);
+        top.add(Box.createHorizontalStrut(10));
         top.add(ip);
+        top.add(Box.createHorizontalStrut(10));
         top.add(connect);
-        
-        bottom.add(output);
-        mid.add(command);
-        mid.add(execute);       
+        top.add(Box.createVerticalStrut(40));
+        mid.add(menuBar);
+        mid.add(output);
+        //mid.add(Box.createVerticalStrut(40));
+        bottom.add(cmdstr);
+        bottom.add(Box.createHorizontalStrut(10));
+        bottom.add(command);
+        bottom.add(Box.createHorizontalStrut(10));
+        bottom.add(execute);
+        bottom.add(Box.createVerticalStrut(40));       
         add(top);
-        add(bottom);
         add(mid);
+        add(bottom);
+        
 
 
         }
@@ -93,7 +126,7 @@ class REAC extends JFrame{
         String n="REAC";
         REAC reac=new REAC(n);
         //reac.open.doClick();f++;
-        reac.setSize(800,640);
+        reac.setSize(900,550);
         reac.setVisible(true);
     }
 
