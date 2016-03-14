@@ -208,17 +208,25 @@ void killProgramPID(reac_communication *reac, std::string pid) {
 
 void executeShell(reac_communication *reac,std::string relPath, std::string argv1) {
 	int pid = fork();
+
 	if (pid==0) {
 		char cwd[150];
 		getcwd(cwd,150);
 		char exePath[200];
+
+
+
+
 		strcpy(exePath,(std::string(cwd)+"/"+relPath).c_str());
-		//Child
+
+				//Child
 		char *argv[4]={"/bin/sh", exePath, NULL, NULL};
 		char argv1_[100];
-		strcpy(argv1_, argv1.c_str());
-		argv[2] = argv1_;
-
+		if (!argv1.empty())
+		{
+			strcpy(argv1_, argv1.c_str());
+			argv[2] = argv1_;
+		}
 		char *newenv[]={NULL};
 		execve("/bin/sh",argv,newenv);
 		perror("Error in Execution!");
@@ -235,9 +243,12 @@ void executeShell(reac_communication *reac,std::string relPath, std::string argv
 void executor::execute(std::string str)
 {
 	reac_communication *reac = (reac_communication *)_ref;
+	std::cout<<str<<std::endl;
+
 	if (str == "START_SHELL") {
 		reac->write_to_socket("Shell : Starting\n");
-		executeShell(reac,"executor/server_script",NULL);
+		executeShell(reac,"executor/server_script","");
+
 	} else if (str == "EXIT") {
 		reac->close();
 	} else if (str.substr(0,5) == "KILL_") {

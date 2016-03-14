@@ -7,12 +7,15 @@ import java.util.logging.Logger;
 import javax.swing.*;
 
 class REAC extends JFrame{
+    private SocketMain mainSocket, executorTransmitter;
+
+
     private JTextField ip,command;
     private JButton connect,execute;
     private JTextArea output;
     
-    	public REAC(final String name)			//throws IOException
-    	{
+        public REAC(final String name)          //throws IOException
+        {
         super(name);
         JPanel top = new JPanel();
         JPanel mid = new JPanel();
@@ -35,17 +38,18 @@ class REAC extends JFrame{
         output.setForeground(Color.WHITE);
         output.setLineWrap(true);
 
-		connect.addActionListener(new ActionListener(){
+        connect.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent event)
             {
-               
+                
+                connectNow();          
             }
         });
 
         execute.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent event)
             {
-               
+               executorTransmitter.sendMsg(command.getText());
             }
         });       
 
@@ -54,19 +58,37 @@ class REAC extends JFrame{
         
         bottom.add(output);
         mid.add(command);
-        mid.add(execute);    	
-    	add(top);
-    	add(bottom);
-    	add(mid);
+        mid.add(execute);       
+        add(top);
+        add(bottom);
+        add(mid);
 
 
-    	}
+        }
+
+    void appendMsg(String s) {
+        output.setText(output.getText()+s);
+    }
+
+    void connectNow() {
+        System.out.println("Connect Now!");
+        System.out.println(     mainSocket = new SocketMain(8080,ip.getText()) );
+        System.out.println(     mainSocket.connect() );
+        mainSocket.startShell();
+        SocketReceiver receiver = new SocketReceiver(this, 8082);
+        receiver.start();
+
+        try
+        {
+            Thread.sleep(5);
+        }catch(Exception e){}
+        executorTransmitter = new SocketMain(8081, ip.getText());
+        executorTransmitter.connect();
+    }
 
 
 
-
-
-    public static void main(String[] args) 		//throws IOException
+    public static void main(String[] args)      //throws IOException
     {
         String n="REAC";
         REAC reac=new REAC(n);
