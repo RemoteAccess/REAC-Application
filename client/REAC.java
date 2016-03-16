@@ -29,7 +29,7 @@ class REAC extends JFrame{
         top.setLayout(new BoxLayout(top, BoxLayout.X_AXIS));
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.X_AXIS));
         //mid.setLayout(new BoxLayout(mid, BoxLayout.X_AXIS));
-        mid.setLayout(new FlowLayout());
+        //mid.setLayout(new FlowLayout());
         //menubar styling
         menuBar = new JMenuBar();
         menuBar.add(Box.createRigidArea(new Dimension(20,10)));
