@@ -51,7 +51,7 @@ class REAC extends JFrame{
         output=new JTextArea(20,41);
         scroll = new JScrollPane(output);
         scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        add(scroll);
+        getContentPane().add(scroll);
 
         output.setFont(new Font("Verdana",Font.PLAIN,14));
         output.setBackground(Color.BLACK);
@@ -84,6 +84,7 @@ class REAC extends JFrame{
         top.add(Box.createVerticalStrut(40));
         mid.add(menuBar);
         mid.add(output);
+       
         //mid.add(Box.createVerticalStrut(40));
         bottom.add(cmdstr);
         bottom.add(Box.createHorizontalStrut(10));
@@ -113,7 +114,7 @@ class REAC extends JFrame{
 
         try
         {
-            Thread.sleep(5);
+            Thread.sleep(10000);
         }catch(Exception e){}
         executorTransmitter = new SocketMain(8081, ip.getText());
         executorTransmitter.connect();

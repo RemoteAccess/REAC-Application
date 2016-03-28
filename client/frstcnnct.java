@@ -57,7 +57,7 @@ class SocketMain
   public void sendMsg(String msg) {
  	try
   	{
-	  	osw.write(msg);
+	  	osw.write(msg+"\n");
 	  	osw.flush();
  	} catch(IOException e) {
   		System.out.println(e.toString());
