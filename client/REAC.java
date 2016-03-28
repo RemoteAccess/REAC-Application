@@ -71,7 +71,8 @@ class REAC extends JFrame{
         execute.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent event)
             {
-               executorTransmitter.sendMsg(command.getText());
+               executorTransmitter.sendMsg(command.getText()+"\r\n");
+               System.out.println("Sending : "+command.getText()+"\r\n");
             }
         });       
 
@@ -113,10 +114,13 @@ class REAC extends JFrame{
 
         try
         {
-            Thread.sleep(5);
-        }catch(Exception e){}
-        executorTransmitter = new SocketMain(8081, ip.getText());
-        executorTransmitter.connect();
+            Thread.sleep(10000);
+             executorTransmitter = new SocketMain(8081, ip.getText());
+            executorTransmitter.connect();
+        }catch(Exception e){
+            System.err.println("Cant Wait!!!!!!");
+        }
+       
     }
 
 

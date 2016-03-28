@@ -21,9 +21,13 @@ private:
 	tcp::socket socket;
 	boost::asio::streambuf response_;
 	bool isCommunicating;
+	std::string IP;
 	FILE* pipe;
 
 public:
+	std::string getIP() {
+		return IP;
+	}
 	reac_communication(boost::asio::io_service& io_service) : socket(io_service)
 	{
 		
@@ -39,7 +43,7 @@ public:
 	
 	void start()
 	{
-		std::cout<<"New user Connected from "<<socket.remote_endpoint().address().to_string()<<std::endl;
+		std::cout<<"New user Connected from "<<(IP=socket.remote_endpoint().address().to_string())<<std::endl;
 		sendWelcomeMessage();
 		write_to_socket(REAC_PROMPT);
 
@@ -247,8 +251,7 @@ void executor::execute(std::string str)
 
 	if (str == "START_SHELL") {
 		reac->write_to_socket("Shell : Starting\n");
-		executeShell(reac,"executor/server_script","");
-
+		system(("/bin/sh ./executor/server_script "+reac->getIP()).c_str());
 	} else if (str == "EXIT") {
 		reac->close();
 	} else if (str.substr(0,5) == "KILL_") {
