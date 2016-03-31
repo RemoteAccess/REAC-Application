@@ -6,7 +6,7 @@ class serverUI
 {
 	public static void main(String[] args)
 	{
-		String n=JOptionPane.showInputDialog("Enter the Password");
+		String n=JOptionPane.showInputDialog("Enter the current Password");
 		String file="passwd.txt";
 		try 
     	 {
@@ -15,7 +15,21 @@ class serverUI
     		if((line = reader.readLine()) != null) {
         	if(n.equals(line))
         	{
-        		JOptionPane.showMessageDialog(null,"Welcome to REAC");
+        		String o=JOptionPane.showInputDialog("Enter the new Password");
+
+        		try
+        		{	
+        			FileWriter f = new FileWriter(file);
+           			f.write(o);
+           			f.close();
+        			JOptionPane.showMessageDialog(null,"Password changed successfully");
+        		}
+        		catch(IOException e)
+        		{
+        			e.printStackTrace();
+        		}		
+
+
     		}
     		else
     		{

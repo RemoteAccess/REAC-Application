@@ -35,10 +35,10 @@ class REAC extends JFrame{
         menuBar.add(Box.createRigidArea(new Dimension(20,10)));
 
         //JLABELS
-        ipstr=new JLabel("Enter the IP Address: ");
+        ipstr=new JLabel("IP Address: ");
         outstr=new JLabel("Terminal");
         
-        cmdstr=new JLabel("Enter the Command :  ");
+        cmdstr=new JLabel("Command :  ");
         connect = new RoundButton("CONNECT");
         execute = new RoundButton("EXECUTE");
         // textfields
@@ -48,9 +48,13 @@ class REAC extends JFrame{
         ip.setBorder(border);
         command.setBorder(border);
         // adding scroll to JTEXTAREA
-        output=new JTextArea(20,41);
+        output=new JTextArea(21,50);
         scroll = new JScrollPane(output);
+        //scroll.setBounds(0, 0, 800, 600);
         scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        scroll.setValue( scroll.getMaximum() );
+        scroll.getViewport().setViewPosition(new Point(0,output.getDocument().getLength()));
+
         getContentPane().add(scroll);
 
         output.setFont(new Font("Verdana",Font.PLAIN,14));
@@ -59,6 +63,7 @@ class REAC extends JFrame{
         output.setEditable(false);
         output.setLineWrap(true);
         output.setWrapStyleWord (false);
+        output.setCaretPosition(output.getDocument().getLength());
 
         connect.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent event)
@@ -76,16 +81,15 @@ class REAC extends JFrame{
             }
         });       
 
-        menuBar.add(outstr);
+        //menuBar.add(outstr);
         top.add(ipstr);
         top.add(Box.createHorizontalStrut(10));
         top.add(ip);
         top.add(Box.createHorizontalStrut(10));
         top.add(connect);
         top.add(Box.createVerticalStrut(40));
-        mid.add(menuBar);
-        mid.add(output);
-       
+        //mid.add(menuBar);
+        mid.add(scroll);
         //mid.add(Box.createVerticalStrut(40));
         bottom.add(cmdstr);
         bottom.add(Box.createHorizontalStrut(10));
@@ -115,7 +119,7 @@ class REAC extends JFrame{
 
         try
         {
-            Thread.sleep(10000);
+            Thread.sleep(1000);
              executorTransmitter = new SocketMain(8081, ip.getText());
             executorTransmitter.connect();
         }catch(Exception e){
@@ -135,4 +139,4 @@ class REAC extends JFrame{
         reac.setVisible(true);
     }
 
-}
+    }
