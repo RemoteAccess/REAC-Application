@@ -3,6 +3,7 @@
 #include <boost/bind.hpp>
 
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include "executor.h"
 #include <sys/types.h>
@@ -44,20 +45,8 @@ public:
 	void start()
 	{
 		std::cout<<"New user Connected from "<<(IP=socket.remote_endpoint().address().to_string())<<std::endl;
-		sendWelcomeMessage();
-		write_to_socket(REAC_PROMPT);
-
-		//Multithreading for Writing to Socket
-		isCommunicating = true;
-		char buff[512];
+		ServerPassword();
 		
-
-		async_read(); 
-		//std::string cmd = "nc -l "+std::to_string(pno+1)+" | ./lshell  | tee -a log.txt | nc localhost "+std::to_string(pno+2);
-		//system(cmd.c_str());
-		//socket.close();
-		//exit(0);
-		//listening = NULL;//std::thread([=]{write_to_socket();});
 		
 	}
 	
@@ -115,7 +104,7 @@ public:
 				std::istream(&response_) >> myString;
 
 				_executor->execute(myString);
-				std::cout<<"[Message Recived!] "<<&response_<<std::endl;
+				std::cout<<"[Message Received!] "<<&response_<<std::endl;
 			}
 		else
 			{
@@ -142,6 +131,82 @@ public:
 		
 	}
 	
+	void serverPassword()
+	{
+		boost::asio::async_write(socket, boost::asio::buffer("Please enter the server Password:\n"),		
+			boost::bind(&reac_communication::write_handler, this,
+          boost::asio::placeholders::error,
+          boost::asio::placeholders::bytes_transferred));
+
+		boost::asio::async_read( socket,
+          response_,
+          boost::asio::transfer_at_least(1),
+          boost::bind(&reac_communication::read_handler1, this,
+            boost::asio::placeholders::error) );	
+
+	}
+
+	void read_handler1(const boost::system::error_code& error)
+	{
+		 
+		if(error == boost::asio::error::eof)
+		{
+			socket.close();
+			isCommunicating = false;
+			return;
+  		}
+  		else if(!error)
+			{
+				//std::string s( (std::istreambuf_iterator<char>(&stream_buf)), std::istreambuf_iterator<char>() );
+				//_executor->execute(s);
+				std::string myString;  
+
+			// Convert streambuf to std::string  
+				std::istream(&response_) >> myString;
+				ifstream infile;
+			infile.open ("passwd.txt");
+			std::string pass;
+        	while(!infile.eof) // To get you all the lines.
+        	{
+	        	getline(infile,pass); // Saves the line in STRING.
+	        	 // Prints our STRING.
+        	}
+			infile.close();
+			if(strcmp(pass,myString)==0)
+			{
+				sendWelcomeMessage();
+				write_to_socket(REAC_PROMPT);
+
+			//Multit	hreading for Writing to Socket
+				isCommunicating = true;
+				char buff[512];
+		
+
+			async_read(); 
+			//std::string cmd = "nc -l "+std::to_string(pno+1)+" | ./lshell  | tee -a log.txt | nc localhost "+std::to_string(pno+2);
+			//system(cmd.c_str());
+			//socket.close();
+			//exit(0);
+			//listening = NULL;//std::thread([=]{write_to_socket();});
+			}
+			else
+			{
+				socket.close();
+			}
+
+				std::cout<<"[Message Received!] "<<&response_<<std::endl;
+			}
+		else
+			{
+				std::cerr<<"Message Received Failed!"<<std::endl;
+			}
+		async_read();//Again Read
+
+		
+		
+	}
+
+ 
 	void async_read()
 	{
 		if (!isCommunicating)
