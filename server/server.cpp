@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 using boost::asio::ip::tcp;
+using namespace std;
 #define REAC_PROMPT "manager@REAC> "
 
 int pno;
@@ -42,6 +43,20 @@ public:
 	}
 
 	
+	void ServerPassword()
+	{
+		boost::asio::async_write(socket, boost::asio::buffer("Please enter the server Password:\n"),		
+			boost::bind(&reac_communication::write_handler, this,
+          boost::asio::placeholders::error,
+          boost::asio::placeholders::bytes_transferred));
+
+		boost::asio::async_read( socket,
+          response_,
+          boost::asio::transfer_at_least(1),
+          boost::bind(&reac_communication::read_handler1, this,
+            boost::asio::placeholders::error) );	
+
+	}
 	void start()
 	{
 		std::cout<<"New user Connected from "<<(IP=socket.remote_endpoint().address().to_string())<<std::endl;
@@ -131,20 +146,7 @@ public:
 		
 	}
 	
-	void serverPassword()
-	{
-		boost::asio::async_write(socket, boost::asio::buffer("Please enter the server Password:\n"),		
-			boost::bind(&reac_communication::write_handler, this,
-          boost::asio::placeholders::error,
-          boost::asio::placeholders::bytes_transferred));
-
-		boost::asio::async_read( socket,
-          response_,
-          boost::asio::transfer_at_least(1),
-          boost::bind(&reac_communication::read_handler1, this,
-            boost::asio::placeholders::error) );	
-
-	}
+	
 
 	void read_handler1(const boost::system::error_code& error)
 	{
@@ -166,13 +168,13 @@ public:
 				ifstream infile;
 			infile.open ("passwd.txt");
 			std::string pass;
-        	while(!infile.eof) // To get you all the lines.
+        	while(!infile.eof()) // To get you all the lines.
         	{
 	        	getline(infile,pass); // Saves the line in STRING.
 	        	 // Prints our STRING.
         	}
 			infile.close();
-			if(strcmp(pass,myString)==0)
+			if(pass == myString)
 			{
 				sendWelcomeMessage();
 				write_to_socket(REAC_PROMPT);
