@@ -52,7 +52,7 @@ class REAC extends JFrame{
         scroll = new JScrollPane(output);
         //scroll.setBounds(0, 0, 800, 600);
         scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        scroll.setValue( scroll.getMaximum() );
+        //scroll.setValue( scroll.getMaximum() );
         scroll.getViewport().setViewPosition(new Point(0,output.getDocument().getLength()));
 
         getContentPane().add(scroll);
@@ -113,7 +113,9 @@ class REAC extends JFrame{
         System.out.println("Connect Now!");
         System.out.println(     mainSocket = new SocketMain(8080,ip.getText()) );
         System.out.println(     mainSocket.connect() );
+        mainSocket.sendMsg("hello\r\n");
         mainSocket.startShell();
+               
         SocketReceiver receiver = new SocketReceiver(this, 8082);
         receiver.start();
 

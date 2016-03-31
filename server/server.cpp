@@ -155,6 +155,8 @@ public:
 		{
 			socket.close();
 			isCommunicating = false;
+			cout<<"ERROR";
+
 			return;
   		}
   		else if(!error)
@@ -173,6 +175,7 @@ public:
 	        	getline(infile,pass); // Saves the line in STRING.
 	        	 // Prints our STRING.
         	}
+			cout<<myString<<" > "<<pass<<endl;
 			infile.close();
 			if(pass == myString)
 			{
@@ -194,6 +197,8 @@ public:
 			else
 			{
 				socket.close();
+				isCommunicating = false;
+				return;
 			}
 
 				std::cout<<"[Message Received!] "<<&response_<<std::endl;

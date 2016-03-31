@@ -47,7 +47,7 @@ class SocketMain
   public void startShell() {
   	try
   	{
-	  	osw.write("START_SHELL\n");
+	  	osw.write("START_SHELL\r\n");
 	  	osw.flush();
   	} catch(IOException e) {
   		System.out.println(e.toString());
@@ -57,7 +57,7 @@ class SocketMain
   public void sendMsg(String msg) {
  	try
   	{
-	  	osw.write(msg+"\n");
+	  	osw.write(msg);
 	  	osw.flush();
  	} catch(IOException e) {
   		System.out.println(e.toString());
