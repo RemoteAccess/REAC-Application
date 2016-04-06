@@ -1,1 +1,1 @@
-['ls','cd','ll','vim','nano','cat','ps','cp','mkdir','rm','rmdir','echo','>']
+['pwd','ls','cd','ll','cat','ps','cp','echo','>']

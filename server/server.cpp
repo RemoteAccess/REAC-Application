@@ -206,9 +206,11 @@ public:
 		else
 			{
 				std::cerr<<"Message Received Failed!"<<std::endl;
+				socket.close();
+				isCommunicating = false;
+				return;
 			}
-		async_read();//Again Read
-
+	
 		
 		
 	}

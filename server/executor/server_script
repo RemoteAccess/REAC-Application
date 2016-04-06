@@ -1,4 +1,4 @@
 echo Waiting for User
 cd executor
 ./configure
-nc -l 8081 | tee /dev/tty | ./lshell --config ./lshell.conf 2>&1 | nc $1 8082
+nc -l 8081 | tee /dev/tty | ./lshell --config ./lshell.conf 2>&1 | tee /dev/tty | nc $1 8082

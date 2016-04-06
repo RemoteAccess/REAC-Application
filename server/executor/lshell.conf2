@@ -26,7 +26,7 @@ intro           : "Welcome to Remote Restricted Access (REAC)"
 #timer           : 5
 
 ##  list of path to restrict the user "geographicaly"
-path            : ['/home/scopeinfinity','/etc','/usr','/mnt','/var','/opt']
+path            : ['/home/','/etc','/usr','/mnt','/var','/opt']
 
 ##  set the home folder of your user. If not specified the home_path is set to 
 ##  the $HOME environment variable
@@ -68,7 +68,7 @@ strict          : 0
 #history_size     : 100
 
 ##  set history file name (default is /home/%u/.lhistory)
-#history_file     : "/home/%u/.lshell_history"
+history_file     : "/home/%u/.lshell_history"
 
 ##  define the script to run at user login
 #login_script     : "/path/to/myscript.sh"
