@@ -26,6 +26,9 @@ import javafx.util.Pair;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
+import java.net.*;
+import java.util.*;
+import java.io.*;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -82,24 +85,75 @@ public class Home extends javax.swing.JFrame {
     }
     
     private void refreshIP() {
-        try {
+       /* try {
             String ips = "";
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while(interfaces.hasMoreElements()) {
                 NetworkInterface net = interfaces.nextElement();
                 Enumeration<InetAddress> intf = net.getInetAddresses();
+                
                 while(intf.hasMoreElements()) {
                     String newone = intf.nextElement().getHostAddress();
+                    
                     if(newone.matches("([0-9]{1,3}\\.){3}([0-9 ]{3})"))
-                    ips+=newone+" ";
+                    {
+                        ips+=newone+" ";
+                    }
                     
                 }
             }
             IPField.setText(ips);
+            
         } catch (SocketException ex) {
             IPField.setText("127.0.0.1");
+        }*/
+        try{
+            String ips = "";
+        Runtime runtime = Runtime.getRuntime();
+        Process p = runtime.exec("ifconfig ");//| grep \"inet addr\"");
+        Thread.sleep(100);
+       BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+       StringBuffer stdout=new StringBuffer();
+       String t = null;
+        while ((t = stdInput.readLine()) != null) {
+        
+        stdout.append(t);
+        }
+        String s=stdout.toString();
+            System.out.println(s);
+        String[] a=s.split(" ");
+        for(int i=0;i<a.length;i++)
+        {
+            if(a[i].length()>=6 && a[i].substring(0,5).equals("addr:"))
+                if(!(a[i].substring(5,a[i].length()).equals("127.0.0.1")))
+                {                     
+                    ips+=a[i].substring(5)+"\t";                    
+                    
+                }
+        }
+        IPField.setText(ips);
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+         
         }
     }
+    
+    	public void update_ip(String s)
+	{
+		String content = null;
+		URLConnection connection = null;
+		try {
+  				connection =  new URL("http://www.google.com/sendip?"+s).openConnection();
+  				Scanner scanner = new Scanner(connection.getInputStream());
+ 				scanner.useDelimiter("\\Z");
+  				content = scanner.next();
+			}
+		catch ( Exception ex ) {
+    			ex.printStackTrace();
+			}
+	}		
        
     
     private void startServer() {

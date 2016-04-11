@@ -12,7 +12,7 @@ package servergui;
  */
 public class ServerGUI {
 
-    public static final String rootPath = "./";
+    public static final String rootPath = "../";
     /**
      * @param args the command line arguments
      */
