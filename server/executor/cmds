@@ -1,1 +1,1 @@
-['pwd','ls','cd','ll','cat','ps','cp','echo','>']
+['pwd','ls','cd','ll','cat','ps','cp','echo','>','base64']
