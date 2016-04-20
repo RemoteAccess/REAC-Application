@@ -38,8 +38,7 @@ public class Main extends javax.swing.JFrame {
     
     
     void connectNow() {
-        System.out.println("Connect Now!");
-        System.out.println(     mainSocket = new SocketMain(8080,tf_IP.getText()) );
+        mainSocket = new SocketMain(8080,tf_IP.getText());
         if(!mainSocket.connect()) {
             appendMsg("Unable to Connect!!!\n");
             return;
