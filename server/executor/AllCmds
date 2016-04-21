@@ -6,10 +6,10 @@
 1ps
 1cp
 0mkdir
-1rm
+0rm
 0rmdir
 2echo
-0base64
+2base64
 0dpkg
 1chmod
 1touch
