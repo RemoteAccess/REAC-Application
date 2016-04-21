@@ -175,16 +175,21 @@ public:
 			// Convert streambuf to std::string  
 				std::istream(&response_) >> myString;
 				ifstream infile;
-			infile.open ("passwd.txt");
+			infile.open (".pass");
 			std::string pass;
+			bool readPwd = false;
         	if(!infile.eof()) // To get you all the lines.
         	{
 	        	getline(infile,pass); // Saves the line in STRING.
+	        	readPwd = true;
 	        	 // Prints our STRING.
+        	}
+        	else {
+        		cerr<<"Can't Read Password\n";
         	}
 			cout<<myString<<" > "<<pass<<endl;
 			infile.close();
-			if(pass == myString)
+			if(readPwd && pass == myString)
 			{
 				sendWelcomeMessage();
 				isCommunicating = true;

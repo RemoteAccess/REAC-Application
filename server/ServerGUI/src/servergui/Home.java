@@ -41,7 +41,8 @@ import java.io.*;
  * @author scopeinfinity
  */
 public class Home extends javax.swing.JFrame {
-
+    public static final String ROOT_URL = "http://127.0.0.1/";
+    
     private boolean isRunningServer = false;
     private Runtime rt;
     private Process proc;
@@ -49,11 +50,18 @@ public class Home extends javax.swing.JFrame {
     private BufferedReader stdIn,stdErr;
     private Display display1, display2;
     
+    private static final String PASS_NORMAL = ".pass_n";
+    private static final String PASS_ROOT = ".pass_r";
+    private static final String PASS = ".pass";
+    
+    
     private class Display implements Runnable {
 
         boolean isRunning = true;
         BufferedReader br;
         Thread t;
+        
+        
         public Display(BufferedReader br) {
             t = new Thread(this);
             t.start();
@@ -127,11 +135,14 @@ public class Home extends javax.swing.JFrame {
             if(a[i].length()>=6 && a[i].substring(0,5).equals("addr:"))
                 if(!(a[i].substring(5,a[i].length()).equals("127.0.0.1")))
                 {                     
-                    ips+=a[i].substring(5)+"\t";                    
+                    ips+=a[i].substring(5)+"\t";   
+                    if(!a[i].substring(5).trim().isEmpty())
+                        update_ip(a[i].substring(5).trim());
                     
                 }
         }
         IPField.setText(ips);
+        
         }
         catch(Exception e)
         {
@@ -145,7 +156,7 @@ public class Home extends javax.swing.JFrame {
 		String content = null;
 		URLConnection connection = null;
 		try {
-  				connection =  new URL("http://www.google.com/sendip?"+s).openConnection();
+  				connection =  new URL(ROOT_URL+"sendip?"+s).openConnection();
   				Scanner scanner = new Scanner(connection.getInputStream());
  				scanner.useDelimiter("\\Z");
   				content = scanner.next();
@@ -155,9 +166,56 @@ public class Home extends javax.swing.JFrame {
 			}
 	}		
        
+    private boolean setPassword(boolean asRoot) throws IOException {
+        BufferedWriter bw = null;
+        try {
+            // TODO add your handling code here:
+            File fileIn;
+            if(!asRoot)
+                fileIn = new File(ServerGUI.rootPath+PASS_NORMAL);
+            else
+                fileIn = new File(ServerGUI.rootPath+PASS_ROOT);
+            BufferedReader br = new BufferedReader(new FileReader(fileIn));
+            String pwd = br.readLine();
+            br.close();
+            
+            File file = new File(ServerGUI.rootPath+PASS);
+            bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
+            try {
+                bw.write(pwd);
+                return true;
+
+            } catch (IOException ex) {
+                Logger.getLogger(Home.class.getName()).log(Level.SEVERE, null, ex);
+                JOptionPane.showMessageDialog(null,"Error in Loading Password!");
+        
+            }
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Home.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null,"Error in Loading Password!");
+        } finally {
+            try {
+                bw.close();
+            } catch (IOException ex) {
+                Logger.getLogger(Home.class.getName()).log(Level.SEVERE, null, ex);
+                JOptionPane.showMessageDialog(null,"Error in Loading Password!");
+            }
+        }
+        return false;
+    }
     
-    private void startServer() {
+    
+    private void startServer(boolean asRoot) {
+        try {
+            setPassword(asRoot);
+        } catch (IOException ex) {
+            Logger.getLogger(Home.class.getName()).log(Level.SEVERE, null, ex);
+            return;
+        }
         String[] commands = {ServerGUI.rootPath+"server"};
+        //if(asRoot)
+        //    commands[0] = "gksu -u root \""+ServerGUI.rootPath+"server\"";
+            
         try {
             proc = rt.exec(commands);
             
@@ -168,6 +226,10 @@ public class Home extends javax.swing.JFrame {
             
             display1 = new Display(stdIn);
             display2 = new Display(stdIn);
+            
+            updatePassword.setEnabled(false);
+            updatePasswordSudo.setEnabled(false);
+            
             
             
         } catch (IOException ex) {
@@ -181,7 +243,9 @@ public class Home extends javax.swing.JFrame {
         
         ToggleServer.setText("Start Server");
         proc.destroy();
-        
+        updatePassword.setEnabled(true);
+        updatePasswordSudo.setEnabled(true);
+            
         isRunningServer = false;
         if(display1!=null)
         {
@@ -204,6 +268,21 @@ public class Home extends javax.swing.JFrame {
     public Home() {
         rt = Runtime.getRuntime();
         initComponents();
+        String user = System.getProperty("user.name");
+        System.out.println("Welcome "+user+"!");
+        
+        if(user.trim().equals("root"))
+        {
+            rootMode.setSelected(true);
+            rootMode.setText("Root Mode : ON");
+        }
+        else     {
+            rootMode.setSelected(false);
+            
+            rootMode.setText("Root Mode : OFF");
+        }
+        
+        
         
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
@@ -222,14 +301,15 @@ public class Home extends javax.swing.JFrame {
     private ArrayList<JCheckBox> checkBoxCmds;
     private void updateAllowedCommands() {
         checkBoxCmds = new ArrayList<>();
-        ArrayList<Pair<Boolean,String>> cmds = new ArrayList<>();
+        ArrayList<Pair<Integer,String>> cmds = new ArrayList<>();
         File file = new File(ServerGUI.rootPath+"executor/AllCmds");
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
             String line;
             while((line = br.readLine())!=null) {
                 {
-                    cmds.add(new Pair<Boolean,String>(line.charAt(0)=='1',line.substring(1)));
+                    if(line.length()>2)
+                    cmds.add(new Pair<Integer,String>(line.charAt(0)-'0',line.substring(1)));
                 }
             }
         } catch (FileNotFoundException ex) {
@@ -239,16 +319,19 @@ public class Home extends javax.swing.JFrame {
             Logger.getLogger(Home.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        
-        for(Pair<Boolean,String> cmd:cmds){
+        checkBoxCmds.clear();
+        for(Pair<Integer,String> cmd:cmds){
             JCheckBox b = new JCheckBox(cmd.getValue());
             checkBoxCmds.add(b);
-            b.setSelected(cmd.getKey());
+            b.setSelected(cmd.getKey()!=0);
+            if(cmd.getKey()==2)
+                b.setEnabled(false);
+            
             b.addItemListener(new ItemListener() {
 
                 @Override
                 public void itemStateChanged(ItemEvent e) {
-                    saveAllowedCommands();
+                    saveAllowedCommands(null);
                 }
             });
            jPanelAllowedCommands.setLayout(new GridLayout(0,1));
@@ -256,7 +339,7 @@ public class Home extends javax.swing.JFrame {
         }
     }
     
-    private void saveAllowedCommands() {
+    private void saveAllowedCommands(String newCommand) {
         if(isRunningServer) {
             JOptionPane.showMessageDialog(null,"Please Turn Off Server First!");
         } else {
@@ -264,10 +347,17 @@ public class Home extends javax.swing.JFrame {
             String outAll = "";
             for(JCheckBox c : checkBoxCmds)
             {
-                outAll+=(c.isSelected()?"1":"0")+c.getText()+"\n";
+                if(c.isEnabled())
+                    outAll+=(c.isSelected()?"1":"0")+c.getText()+"\n";
+                else
+                    outAll+=(c.isSelected()?"2":"0")+c.getText()+"\n";
+                
                 if(c.isSelected())
                     out+="'"+c.getText()+"',";
             }
+            if(newCommand!=null)
+            outAll+="0"+newCommand+"\n";
+            
             int l=-1;
             if((l=out.lastIndexOf(","))>=0)
                 out = out.substring(0,l );
@@ -324,16 +414,24 @@ public class Home extends javax.swing.JFrame {
         RefreshIP = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         OutputScreen = new javax.swing.JTextPane();
+        rootMode = new javax.swing.JToggleButton();
         jPanel2 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         passwordField = new javax.swing.JPasswordField();
         updatePassword = new javax.swing.JButton();
         jLabel3 = new javax.swing.JLabel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jPanelAllowedCommands = new javax.swing.JPanel();
         updatePasswordSudo = new javax.swing.JButton();
         passwordFieldSudo = new javax.swing.JPasswordField();
         jLabel4 = new javax.swing.JLabel();
+        addCommand = new javax.swing.JButton();
+        newCmd = new javax.swing.JTextField();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jPanelAllowedCommands = new javax.swing.JPanel();
+        jLabel5 = new javax.swing.JLabel();
+        jPanel3 = new javax.swing.JPanel();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        jTextPane1 = new javax.swing.JTextPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -365,27 +463,30 @@ public class Home extends javax.swing.JFrame {
         OutputScreen.setText("Hello User!\n\nYou can change configuration from above tab.\nPress 'Start Server' to continue...\n\n");
         jScrollPane1.setViewportView(OutputScreen);
 
+        rootMode.setText("Root Mode");
+        rootMode.setEnabled(false);
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(252, 252, 252)
-                        .addComponent(ToggleServer)
-                        .addGap(0, 285, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jScrollPane1))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(IPField)
+                        .addComponent(IPField, javax.swing.GroupLayout.DEFAULT_SIZE, 491, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(RefreshIP)))
                 .addContainerGap())
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(213, 213, 213)
+                .addComponent(ToggleServer)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(rootMode)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -398,7 +499,9 @@ public class Home extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 342, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(ToggleServer)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(ToggleServer)
+                    .addComponent(rootMode))
                 .addContainerGap())
         );
 
@@ -421,19 +524,6 @@ public class Home extends javax.swing.JFrame {
 
         jLabel3.setText("Allowed Commands");
 
-        javax.swing.GroupLayout jPanelAllowedCommandsLayout = new javax.swing.GroupLayout(jPanelAllowedCommands);
-        jPanelAllowedCommands.setLayout(jPanelAllowedCommandsLayout);
-        jPanelAllowedCommandsLayout.setHorizontalGroup(
-            jPanelAllowedCommandsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 602, Short.MAX_VALUE)
-        );
-        jPanelAllowedCommandsLayout.setVerticalGroup(
-            jPanelAllowedCommandsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 206, Short.MAX_VALUE)
-        );
-
-        jScrollPane2.setViewportView(jPanelAllowedCommands);
-
         updatePasswordSudo.setText("Update Sudo Password");
         updatePasswordSudo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -449,6 +539,30 @@ public class Home extends javax.swing.JFrame {
 
         jLabel4.setText("Sudo Password");
 
+        addCommand.setText(" + ");
+        addCommand.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addCommandActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanelAllowedCommandsLayout = new javax.swing.GroupLayout(jPanelAllowedCommands);
+        jPanelAllowedCommands.setLayout(jPanelAllowedCommandsLayout);
+        jPanelAllowedCommandsLayout.setHorizontalGroup(
+            jPanelAllowedCommandsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 602, Short.MAX_VALUE)
+        );
+        jPanelAllowedCommandsLayout.setVerticalGroup(
+            jPanelAllowedCommandsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 293, Short.MAX_VALUE)
+        );
+
+        jScrollPane2.setViewportView(jPanelAllowedCommands);
+
+        jScrollPane3.setViewportView(jScrollPane2);
+
+        jLabel5.setText("New Command");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -456,25 +570,30 @@ public class Home extends javax.swing.JFrame {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel3)
+                            .addComponent(jLabel4)
+                            .addComponent(jLabel2))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel4)
-                                    .addComponent(jLabel2))
+                                .addComponent(passwordField, javax.swing.GroupLayout.PREFERRED_SIZE, 195, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addGroup(jPanel2Layout.createSequentialGroup()
-                                        .addComponent(passwordField, javax.swing.GroupLayout.PREFERRED_SIZE, 195, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(updatePassword, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                    .addGroup(jPanel2Layout.createSequentialGroup()
-                                        .addComponent(passwordFieldSudo, javax.swing.GroupLayout.PREFERRED_SIZE, 195, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(updatePasswordSudo)))))
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                                .addComponent(updatePassword, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addComponent(passwordFieldSudo, javax.swing.GroupLayout.PREFERRED_SIZE, 195, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(updatePasswordSudo)))
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel5)
+                        .addGap(3, 3, 3)
+                        .addComponent(newCmd, javax.swing.GroupLayout.PREFERRED_SIZE, 104, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(addCommand))
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 604, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -493,13 +612,40 @@ public class Home extends javax.swing.JFrame {
                         .addComponent(passwordFieldSudo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(updatePasswordSudo)))
                 .addGap(2, 2, 2)
-                .addComponent(jLabel3)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(addCommand)
+                    .addComponent(newCmd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel5))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(129, Short.MAX_VALUE))
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 311, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         jTabbedPane2.addTab("Configuration", jPanel2);
+
+        jTextPane1.setEditable(false);
+        jTextPane1.setText(ServerGUI.INFO);
+        jScrollPane4.setViewportView(jTextPane1);
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 604, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 416, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        jTabbedPane2.addTab("Info", jPanel3);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -526,7 +672,7 @@ public class Home extends javax.swing.JFrame {
     private void ToggleServerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleServerActionPerformed
         // TODO add your handling code here:
         if(!isRunningServer) {
-            startServer();
+            startServer(rootMode.isSelected());
         } else {
             stopServer();
             
@@ -545,7 +691,7 @@ public class Home extends javax.swing.JFrame {
         BufferedWriter bw = null;
         try {
             // TODO add your handling code here:
-            File file = new File(ServerGUI.rootPath+"passwd.txt");
+            File file = new File(ServerGUI.rootPath+PASS_NORMAL);
             bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
             try {
                 bw.write(passwordField.getPassword());
@@ -575,7 +721,7 @@ public class Home extends javax.swing.JFrame {
          BufferedWriter bw = null;
         try {
             // TODO add your handling code here:
-            File file = new File(ServerGUI.rootPath+"sudopasswd.txt");
+            File file = new File(ServerGUI.rootPath+PASS_ROOT);
             bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
             try {
                 bw.write(passwordFieldSudo.getPassword());
@@ -599,6 +745,19 @@ public class Home extends javax.swing.JFrame {
         
     }//GEN-LAST:event_updatePasswordSudoActionPerformed
 
+    private void addCommandActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addCommandActionPerformed
+        // TODO add your handling code here:
+        if(isRunningServer) {
+           JOptionPane.showMessageDialog(null,"Please Stop the Server First!!");
+            return;
+        }
+        String cmd = newCmd.getText();
+        saveAllowedCommands(cmd);
+        updateAllowedCommands();
+        newCmd.setText("");
+        
+    }//GEN-LAST:event_addCommandActionPerformed
+
     
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -606,18 +765,26 @@ public class Home extends javax.swing.JFrame {
     private javax.swing.JTextPane OutputScreen;
     private javax.swing.JButton RefreshIP;
     private javax.swing.JButton ToggleServer;
+    private javax.swing.JButton addCommand;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanelAllowedCommands;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JTabbedPane jTabbedPane2;
+    private javax.swing.JTextPane jTextPane1;
+    private javax.swing.JTextField newCmd;
     private javax.swing.JPasswordField passwordField;
     private javax.swing.JPasswordField passwordFieldSudo;
+    private javax.swing.JToggleButton rootMode;
     private javax.swing.JButton updatePassword;
     private javax.swing.JButton updatePasswordSudo;
     // End of variables declaration//GEN-END:variables
