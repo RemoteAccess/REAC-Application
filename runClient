@@ -1,2 +1,5 @@
-java -jar Client/dist/Client.jar 
+
+cd Client/dist
+java -jar Client.jar 
+cd ../../
 

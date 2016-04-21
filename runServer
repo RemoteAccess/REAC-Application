@@ -1,1 +1,3 @@
-java -jar server/ServerGUI.jar
+cd server
+java -jar ServerGUI.jar
+cd ..
