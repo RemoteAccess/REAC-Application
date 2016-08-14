@@ -1,0 +1,5 @@
+
+cd Client/dist
+java -jar Client.jar 
+cd ../../
+
